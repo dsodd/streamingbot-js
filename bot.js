@@ -3,7 +3,6 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { Player } = require('discord-player');
 const messageHandler = require('./events/messageCreate');
 
-// Create Discord client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -13,7 +12,6 @@ const client = new Client({
     ]
 });
 
-// Initialize Discord Player
 const player = new Player(client);
 client.player = player;
 
