@@ -1,7 +1,26 @@
-export async function pauseCommand(message) {
-    const queue = message.client.player.nodes.get(message.guild.id);
-    if (!queue || queue.node.isPaused()) return message.channel.send('❌ No music is playing or already paused.');
+const { createEmbed } = require('../utils/embedUtils');
+const { getPlayer } = require('../utils/playerManager');
+const { AudioPlayerStatus } = require('@discordjs/voice');
 
-    queue.node.pause();
-    message.channel.send('⏸️ Paused the music.');
+function pauseCommand(message) {
+    const player = getPlayer(message.guild.id);
+    
+    if (!player || player.state.status === AudioPlayerStatus.Idle) {
+        return message.channel.send({ 
+            embeds: [createEmbed('error', '❌ No music is playing.')] 
+        });
+    }
+
+    if (player.state.status === AudioPlayerStatus.Paused) {
+        return message.channel.send({ 
+            embeds: [createEmbed('error', '❌ Music is already paused.')] 
+        });
+    }
+
+    player.pause();
+    message.channel.send({ 
+        embeds: [createEmbed('info', '⏸️ Paused the music.')] 
+    });
 }
+
+module.exports = { pauseCommand };

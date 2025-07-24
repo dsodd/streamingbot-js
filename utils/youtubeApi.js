@@ -7,8 +7,56 @@ const youtube = google.youtube({
     auth: process.env.YOUTUBE_API_KEY
 });
 
+function detectPlatform(url) {
+    if (!url) return 'search';
+    
+    try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+        
+        if (hostname === 'youtu.be' || hostname === 'www.youtube.com' || hostname === 'music.youtube.com') {
+            return 'youtube';
+        } else if (hostname === 'open.spotify.com') {
+            return 'spotify';
+        } else if (hostname === 'soundcloud.com') {
+            return 'soundcloud';
+        }
+    } catch (error) {
+        // If URL parsing fails, treat as search query
+        return 'search';
+    }
+    
+    return 'search';
+}
+
 async function getYoutubeVideo(query) {
     try {
+        // If it's a direct YouTube URL, return it directly
+        if (query.includes('youtube.com/watch?v=') || query.includes('youtu.be/')) {
+            // Get video details using the video ID
+            const videoId = query.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+            if (videoId) {
+                const response = await youtube.videos.list({
+                    id: videoId,
+                    part: 'snippet'
+                });
+                
+                if (response.data.items.length > 0) {
+                    const video = response.data.items[0];
+                    return {
+                        title: video.snippet.title,
+                        url: query,
+                        channelTitle: video.snippet.channelTitle
+                    };
+                }
+            }
+            return {
+                title: 'YouTube Video',
+                url: query,
+                channelTitle: 'Unknown'
+            };
+        }
+
         const response = await youtube.search.list({
             q: query,
             part: 'snippet',
@@ -21,7 +69,8 @@ async function getYoutubeVideo(query) {
         const video = response.data.items[0];
         return {
             title: video.snippet.title,
-            url: `https://www.youtube.com/watch?v=${video.id.videoId}`
+            url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
+            channelTitle: video.snippet.channelTitle
         };
     } catch (error) {
         console.error('❌ YouTube API Error:', error);
@@ -50,4 +99,4 @@ async function getYoutubePlaylist(playlistUrl) {
     }
 }
 
-module.exports = { getYoutubeVideo, getYoutubePlaylist };
+module.exports = { getYoutubeVideo, getYoutubePlaylist, detectPlatform };
